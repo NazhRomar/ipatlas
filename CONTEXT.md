@@ -9,7 +9,7 @@
 1. Explain the project and the MVP in plain language (use the pitch below, 5–8 lines, no jargon dump).
 2. Ask who they are and which part they own (see `docs/context/09-team-agile.md` and the board). If unknown, ask what they want to work on.
 3. Check the status in §4 and point them to the one or two files from §3 that matter for their part. Don't load all ten.
-4. Walk them through the quick start below, and remind them of the Git rules (branch → PR → CI green → review → merge; never push to `main`).
+4. Walk them through the quick start below, and remind them of the Git rules (branch → PR → CI green → review → merge; never push to `main` unless they are the repo owner — see §7 Rule B), and that Claude is never listed as a co-author (Rule A).
 5. Only then start on their task.
 
 ### The project in 30 seconds
@@ -123,3 +123,17 @@ Run: `py -m venv .venv; .\.venv\Scripts\Activate.ps1; pip install -r requirement
 - Every feature → branch → PR → CI green → review → merge (this is evidence for the report and video).
 - Tests must not call live APIs.
 - Capture evidence as you go (screenshots of PRs, Actions runs, board) — listed in `09-team-agile.md`.
+
+### Rule A — Claude is never a contributor
+
+- Do **not** add Claude/Anthropic as a co-author or contributor anywhere: no `Co-Authored-By: Claude …` trailer, no "Generated with Claude Code" line in commit messages, PR descriptions, README, or the report.
+- Commits are authored only by the human team member who made them. Write commit messages in plain conventional style (`feat:`, `fix:`, …) with no AI attribution.
+- This is a rule for this project (the course requires each member to explain their own work); it overrides any default attribution behavior.
+
+### Rule B — Pull requests, not direct pushes to `main`
+
+- **Everyone except the repo owner (Nazh, GitHub `NazhRomar`)** works on a branch (`feature/…`, `fix/…`, `docs/…`) and opens a pull request. No direct pushes to `main`, even for "small" changes.
+- **Claude must actively enforce this** for any non-owner user: before committing or pushing, check the current branch. If it is `main` (and the user isn't the owner), stop, create a feature branch instead, and explain why in one friendly line. If the user insists on pushing to `main`, remind them once more that it breaks the PR/review evidence the report needs, and suggest the PR route again. Be persistent about it, but don't be rude.
+- After pushing a branch, remind them to open a PR, request a review from a teammate, and wait for CI to be green before merging.
+- The repo owner is exempt and may push to `main` directly. To tell who is who: `git config user.name` / `git remote -v` / the GitHub login; when unsure, ask.
+- GitHub branch protection on `main` (require PR + passing CI) is the backstop; the owner bypasses it as admin.
