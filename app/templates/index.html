@@ -3,17 +3,151 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IPAtlas</title>
+  <title>IPAtlas · IP Geolocation &amp; Network Mapper</title>
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-  <h1>IPAtlas</h1>
-  <p>Backend is running. The dashboard (MVP) is not built yet.</p>
-  <ul>
-    <li><a href="/api/health">/api/health</a></li>
-    <li><a href="/api/myip">/api/myip</a></li>
-    <li><a href="/api/lookup/me">/api/lookup/me</a></li>
-    <li><a href="/api/lookup/8.8.8.8">/api/lookup/8.8.8.8</a></li>
-    <li><a href="/api/history">/api/history</a></li>
-  </ul>
+  <div class="shell">
+
+    <!-- ============ Sidebar: brand + history ============ -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+        </span>
+        <div>
+          <p class="brand-name">IPAtlas</p>
+          <p class="brand-sub">IP Geolocation &amp; Network Mapper</p>
+        </div>
+      </div>
+
+      <section class="history" aria-labelledby="h-history">
+        <div class="history-head">
+          <h2 id="h-history">Recent lookups</h2>
+          <span class="count" id="history-count">0</span>
+        </div>
+        <ul class="history-list" id="history-list">
+          <li class="history-empty">Loading…</li>
+        </ul>
+        <button type="button" class="link-btn" id="clear-history">Clear history</button>
+      </section>
+
+      <div class="side-card">
+        <a href="https://github.com/NazhRomar/ipatlas" rel="noopener">GitHub repo</a>
+        <a href="https://github.com/NazhRomar/ipatlas/actions/workflows/ci.yml" rel="noopener">
+          <img src="https://github.com/NazhRomar/ipatlas/actions/workflows/ci.yml/badge.svg" alt="CI status">
+        </a>
+        <p>Map data © OpenStreetMap contributors</p>
+      </div>
+    </aside>
+
+    <!-- ============ Main ============ -->
+    <main class="content">
+      <header class="intro">
+        <h1 class="title">Where in the world is this IP?</h1>
+        <p class="subtitle">Your public addresses are detected automatically. Look up any other IPv4 or IPv6 address to see its city, provider and location on the map.</p>
+      </header>
+
+      <section class="grid-top" aria-label="Your addresses and lookup">
+        <article class="card asset" aria-labelledby="h-ipv4">
+          <div class="asset-head">
+            <span class="asset-icon v4" aria-hidden="true">v4</span>
+            <h2 id="h-ipv4" class="asset-name">Your IPv4</h2>
+            <button type="button" class="icon-btn" id="copy-ipv4" aria-label="Copy IPv4 address" disabled>
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+            </button>
+          </div>
+          <p class="ip-value" id="ipv4-value">Loading…</p>
+          <p class="status" id="ipv4-status">Detecting…</p>
+        </article>
+
+        <article class="card asset" aria-labelledby="h-ipv6">
+          <div class="asset-head">
+            <span class="asset-icon v6" aria-hidden="true">v6</span>
+            <h2 id="h-ipv6" class="asset-name">Your IPv6</h2>
+            <button type="button" class="icon-btn" id="copy-ipv6" aria-label="Copy IPv6 address" disabled>
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+            </button>
+          </div>
+          <p class="ip-value" id="ipv6-value">Loading…</p>
+          <p class="status" id="ipv6-status">Detecting…</p>
+        </article>
+
+        <article class="card hero" aria-labelledby="h-lookup">
+          <h2 id="h-lookup" class="hero-title">Look up any IP</h2>
+          <p class="hero-sub">Enter an IPv4 or IPv6 address and press Look up.</p>
+          <form id="lookup-form" class="search" novalidate>
+            <label for="ip-input" class="sr-only">IPv4 or IPv6 address</label>
+            <input id="ip-input" name="ip" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="e.g. 8.8.8.8" required>
+            <button type="submit" class="btn btn-hero" id="lookup-btn">Look up</button>
+          </form>
+          <div class="chips" id="presets" aria-label="Examples">
+            <span class="chips-label">Try:</span>
+            <button type="button" class="chip" data-ip="8.8.8.8">8.8.8.8</button>
+            <button type="button" class="chip" data-ip="1.1.1.1">1.1.1.1</button>
+            <button type="button" class="chip" data-ip="2001:4860:4860::8888">2001:4860:4860::8888</button>
+            <button type="button" class="chip chip-bad" data-ip="999.1.1.1">invalid example</button>
+          </div>
+        </article>
+      </section>
+
+      <div id="banner" class="banner" role="alert" hidden></div>
+
+      <section class="panel" aria-labelledby="h-result">
+        <div class="result">
+          <div class="result-main">
+            <h2 id="h-result" class="sr-only">Lookup result</h2>
+            <div class="result-ip">
+              <span id="r-ip"></span>
+              <span class="ver-square" id="r-badge" hidden></span>
+              <button type="button" class="icon-btn" id="copy-result" aria-label="Copy IP address" hidden>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+              </button>
+            </div>
+
+            <p class="place" id="r-place">Finding your location…</p>
+            <p class="place-sub">
+              <span id="r-region"></span>
+              <span class="pill" id="r-cc" hidden></span>
+            </p>
+            <p class="coords" id="r-coords"></p>
+
+            <div class="tiles">
+              <div class="tile">
+                <p class="label">Network</p>
+                <p class="tile-value" id="m-asn">—</p>
+                <p class="tile-foot" id="m-org">—</p>
+              </div>
+              <div class="tile">
+                <p class="label">Timezone</p>
+                <p class="tile-value" id="m-time">—</p>
+                <p class="tile-foot" id="m-tz">—</p>
+              </div>
+              <div class="tile">
+                <p class="label">Data</p>
+                <p class="tile-value" id="m-cached">—</p>
+                <p class="tile-foot" id="m-fetched">—</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="map-wrap">
+            <div id="map" role="region" aria-label="Map of the IP location"></div>
+            <p id="map-note" class="map-note" hidden></p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
